@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
-
 const STORAGE_KEY = 'merchant-growth-ai-token';
 
 export function AuthProvider({ children }) {

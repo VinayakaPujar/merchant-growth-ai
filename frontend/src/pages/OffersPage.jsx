@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { request } from '../services/api.js';
 
 const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
@@ -7,13 +7,13 @@ export default function OffersPage() {
   const [budget, setBudget] = useState(5000);
   const [focus, setFocus] = useState('repeat shoppers');
   const [result, setResult] = useState(null);
+  const [copyResult, setCopyResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
     setError('');
-
     try {
       const payload = await request('/offers', {
         method: 'POST',
@@ -24,6 +24,28 @@ export default function OffersPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateCopy = async (offer) => {
+    try {
+      const payload = await request('/offers/generate-copy', {
+        method: 'POST',
+        body: JSON.stringify({ offer })
+      });
+      setCopyResult({ offer: offer.name, ...payload });
+      alert('Marketing assets created successfully.');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const copyText = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Copied to clipboard.');
+    } catch (error) {
+      alert('Could not copy automatically. Please copy manually.');
     }
   };
 
@@ -76,6 +98,29 @@ export default function OffersPage() {
                 <p><strong>Reason:</strong> {offer.reason}</p>
                 <p><strong>Success metric:</strong> {offer.successMetric}</p>
                 <p><strong>Risk:</strong> {offer.risk}</p>
+
+                <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+                  <button className="secondary-btn" onClick={() => handleGenerateCopy(offer)}>Generate Broadcast Assets</button>
+                  {copyResult && copyResult.offer === offer.name && (
+                    <>
+                      <div className="mini-box">
+                        <strong>WhatsApp</strong>
+                        <p>{copyResult.whatsapp}</p>
+                        <button className="secondary-btn" onClick={() => copyText(copyResult.whatsapp)}>Copy</button>
+                      </div>
+                      <div className="mini-box">
+                        <strong>Instagram</strong>
+                        <p>{copyResult.instagram}</p>
+                        <button className="secondary-btn" onClick={() => copyText(copyResult.instagram)}>Copy</button>
+                      </div>
+                      <div className="mini-box">
+                        <strong>SMS</strong>
+                        <p>{copyResult.sms}</p>
+                        <button className="secondary-btn" onClick={() => copyText(copyResult.sms)}>Copy</button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>

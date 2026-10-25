@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowLeftRight, BarChart3, BrainCircuit, CreditCard, MessageSquareText, Percent, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, BrainCircuit, CreditCard, MessageSquareText, Percent, Sparkles, Calculator } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -9,7 +9,8 @@ const links = [
   { to: '/insights', label: 'AI Insights', icon: BrainCircuit },
   { to: '/chat', label: 'AI Chat', icon: MessageSquareText },
   { to: '/forecast', label: 'Forecast', icon: Sparkles },
-  { to: '/offers', label: 'Offers', icon: Percent }
+  { to: '/offers', label: 'Offers', icon: Percent },
+  { to: '/simulator', label: 'Simulator', icon: Calculator }
 ];
 
 export default function Layout() {

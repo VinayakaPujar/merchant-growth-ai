@@ -7,6 +7,7 @@ import InsightsPage from './pages/InsightsPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import ForecastPage from './pages/ForecastPage.jsx';
 import OffersPage from './pages/OffersPage.jsx';
+import SimulatorPage from './pages/SimulatorPage.jsx';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
@@ -26,6 +27,7 @@ function AppRoutes() {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/forecast" element={<ForecastPage />} />
         <Route path="/offers" element={<OffersPage />} />
+        <Route path="/simulator" element={<SimulatorPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to={token ? '/' : '/login'} replace />} />

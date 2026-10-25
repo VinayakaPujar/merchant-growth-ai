@@ -18,7 +18,6 @@ export async function generateOffers(req, res, next) {
 
     const topProduct = Object.entries(productMap).sort((a, b) => b[1] - a[1])[0];
     const topProductName = topProduct ? topProduct[0] : 'core product line';
-    const topProductRevenue = topProduct ? topProduct[1] : 0;
 
     const offerTemplates = [
       {
@@ -48,25 +47,18 @@ export async function generateOffers(req, res, next) {
     ];
 
     const totalPlannedSpend = offerTemplates.reduce((sum, offer) => sum + offer.suggestedSpend, 0);
-    if (totalPlannedSpend > parsedBudget) {
-      const scaleFactor = parsedBudget / totalPlannedSpend;
-      for (const offer of offerTemplates) {
-        offer.suggestedSpend = Number((offer.suggestedSpend * scaleFactor).toFixed(2));
-      }
-    }
+    const finalOffers = totalPlannedSpend > parsedBudget
+      ? offerTemplates.map((offer) => ({ ...offer, suggestedSpend: Number(((offer.suggestedSpend / totalPlannedSpend) * parsedBudget).toFixed(2)) }))
+      : offerTemplates;
 
-    const finalTotal = offerTemplates.reduce((sum, offer) => sum + offer.suggestedSpend, 0);
+    const finalTotal = finalOffers.reduce((sum, offer) => sum + offer.suggestedSpend, 0);
 
     return res.json({
       budget: parsedBudget,
       totalPlannedSpend: Number(finalTotal.toFixed(2)),
       remainingBudget: Number((parsedBudget - finalTotal).toFixed(2)),
       topProduct: topProductName,
-      topProductRevenue,
-      offers: offerTemplates.map((offer) => ({
-        ...offer,
-        suggestedSpend: Number(offer.suggestedSpend.toFixed(2))
-      })),
+      offers: finalOffers,
       validation: {
         withinBudget: finalTotal <= parsedBudget,
         message: 'The backend validates that the recommended allocation does not exceed the budget.'

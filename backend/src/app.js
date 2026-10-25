@@ -8,6 +8,8 @@ import insightsRoutes from './routes/insights.js';
 import chatRoutes from './routes/chat.js';
 import forecastRoutes from './routes/forecast.js';
 import offersRoutes from './routes/offers.js';
+import anomalyRoutes from './routes/anomalies.js';
+import receiptRoutes from './routes/receipts.js';
 
 dotenv.config();
 
@@ -30,8 +32,8 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -48,6 +50,8 @@ app.use('/api/insights', insightsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/offers', offersRoutes);
+app.use('/api/anomalies', anomalyRoutes);
+app.use('/api/receipts', receiptRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });

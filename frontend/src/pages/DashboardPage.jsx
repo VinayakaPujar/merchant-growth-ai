@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { request } from '../services/api.js';
+import { AlertTriangle, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const currency = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
+  const [alerts, setAlerts] = useState({ hasAnomaly: false, anomalies: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const payload = await request('/dashboard');
-        setData(payload);
+        const [dashboard, anomalyData] = await Promise.all([
+          request('/dashboard'),
+          request('/anomalies')
+        ]);
+        setData(dashboard);
+        setAlerts(anomalyData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -23,6 +31,41 @@ export default function DashboardPage() {
 
     loadDashboard();
   }, []);
+
+  const handleInvestigate = async () => {
+    const message = alerts.anomalies?.[0]
+      ? `I spotted an anomaly: ${alerts.anomalies[0].title}. Please help me investigate the recent transaction pattern.`
+      : 'Review the recent sales pattern and tell me what I should investigate.';
+
+    window.localStorage.setItem('merchant-growth-ai-chat-seed', message);
+    window.location.href = '/chat';
+  };
+
+  const handleExportPdf = async () => {
+    const element = document.querySelector('#executive-digest');
+    if (!element) return;
+
+    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0b0f19' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const img = new Image();
+    img.src = imgData;
+
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
+
+    const width = img.width;
+    const height = img.height;
+    const ratio = Math.min(pageWidth / width, pageHeight / height);
+    const finalWidth = width * ratio;
+    const finalHeight = height * ratio;
+
+    pdf.addImage(imgData, 'PNG', (pageWidth - finalWidth) / 2, 10, finalWidth, finalHeight);
+    pdf.save('merchant-growth-ai-executive-digest.pdf');
+  };
 
   if (loading) return <div className="panel card"><p className="muted">Loading dashboard...</p></div>;
   if (error) return <div className="alert">{error}</div>;
@@ -34,38 +77,52 @@ export default function DashboardPage() {
   const pieData = topProducts.slice(0, 5).map((item) => ({ name: item.name, value: item.revenue }));
 
   return (
-    <div className="stack">
+    <div id="executive-digest" className="stack">
+      {alerts.hasAnomaly && (
+        <div className="alert-banner">
+          <div className="alert-banner__content">
+            <AlertTriangle size={18} />
+            <div>
+              <strong>{alerts.anomalies[0]?.title}</strong>
+              <div>{alerts.anomalies[0]?.message}</div>
+            </div>
+          </div>
+          <button className="primary-btn" onClick={handleInvestigate}>Investigate</button>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="secondary-btn" onClick={handleExportPdf}>
+          <Download size={16} style={{ marginRight: 8 }} /> Export Executive Digest
+        </button>
+      </div>
+
       <div className="grid grid-3">
         <div className="card metric-card">
           <div className="label">Total successful revenue</div>
           <p className="value">{currency.format(metrics.totalRevenue || 0)}</p>
           <div className="detail">Successful sales only</div>
         </div>
-
         <div className="card metric-card">
           <div className="label">Successful transactions</div>
           <p className="value">{metrics.successfulTransactions || 0}</p>
           <div className="detail">Completed sales</div>
         </div>
-
         <div className="card metric-card">
           <div className="label">Failed transactions</div>
           <p className="value">{metrics.failedTransactions || 0}</p>
           <div className="detail">Payment failures</div>
         </div>
-
         <div className="card metric-card">
           <div className="label">Payment success rate</div>
           <p className="value">{(metrics.successRate || 0).toFixed(1)}%</p>
           <div className="detail">Across completed and failed payments</div>
         </div>
-
         <div className="card metric-card">
           <div className="label">Average order value</div>
           <p className="value">{currency.format(metrics.averageOrderValue || 0)}</p>
           <div className="detail">Average successful order</div>
         </div>
-
         <div className="card metric-card">
           <div className="label">Top product revenue</div>
           <p className="value">{topProducts.length ? currency.format(topProducts[0].revenue) : currency.format(0)}</p>
